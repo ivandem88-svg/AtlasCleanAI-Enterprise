@@ -32,7 +32,10 @@ class AtlasAIService {
       messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...messages],
     });
 
-    const choice = response.choices[0];
+    const choice = response.choices?.[0];
+    if (!choice) {
+      throw new Error('OpenAI returned an empty response');
+    }
     return {
       reply: choice.message.content,
       usage: response.usage,
