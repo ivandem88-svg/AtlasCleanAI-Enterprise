@@ -1,0 +1,51 @@
+name: Deploy Production
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Production Infrastructure
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
+      CDK_DEFAULT_REGION: ${{ vars.CDK_DEFAULT_REGION }}
+      ATLAS_DOMAIN_NAME: ${{ vars.ATLAS_DOMAIN_NAME }}
+      ATLAS_CERTIFICATE_ARN: ${{ vars.ATLAS_CERTIFICATE_ARN }}
+      STAGE: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/aws/cdk/package.json
+      - name: Install CDK dependencies
+        working-directory: infrastructure/aws/cdk
+        run: npm install
+      - name: CDK synth
+        working-directory: infrastructure/aws/cdk
+        run: npm run synth -- -c stage=production
+      - name: CDK deploy
+        working-directory: infrastructure/aws/cdk
+        run: npm run deploy:production
