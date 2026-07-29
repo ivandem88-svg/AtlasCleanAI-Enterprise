@@ -1,18 +1,21 @@
 version: '3.8'
 
+# Copy .env.docker.example to .env.docker and fill in values before running.
+# All sensitive values are supplied via environment variables — never hardcode secrets here.
+
 services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: atlasclean_db
-      POSTGRES_USER: atlasclean
-      POSTGRES_PASSWORD: atlasclean_secret
+      POSTGRES_DB: ${POSTGRES_DB:-atlasclean_db}
+      POSTGRES_USER: ${POSTGRES_USER:-atlasclean}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.docker}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U atlasclean -d atlasclean_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-atlasclean} -d ${POSTGRES_DB:-atlasclean_db}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,10 +36,10 @@ services:
       - "3000:3000"
     environment:
       NODE_ENV: development
-      DATABASE_URL: "postgresql://atlasclean:atlasclean_secret@postgres:5432/atlasclean_db"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-atlasclean}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.docker}@postgres:5432/${POSTGRES_DB:-atlasclean_db}"
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: dev_jwt_secret_change_in_production
-      JWT_REFRESH_SECRET: dev_refresh_secret_change_in_production
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.docker}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env.docker}
       PORT: 3000
     depends_on:
       postgres:

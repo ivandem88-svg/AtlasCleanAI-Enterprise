@@ -67,12 +67,18 @@ jobs:
       - name: Run backend tests
         working-directory: backend
         env:
-          DATABASE_URL: "postgresql://atlasclean:atlasclean_test@localhost:5432/atlasclean_test"
+          PGHOST: localhost
+          PGPORT: "5432"
+          PGDATABASE: atlasclean_test
+          PGUSER: atlasclean
+          PGPASSWORD: atlasclean_test
           REDIS_URL: redis://localhost:6379
-          JWT_SECRET: test_jwt_secret
-          JWT_REFRESH_SECRET: test_refresh_secret
+          JWT_SECRET: ci-only-jwt-secret-not-used-in-production
+          JWT_REFRESH_SECRET: ci-only-refresh-not-used-in-production
           NODE_ENV: test
-        run: npm test
+        run: |
+          export DATABASE_URL="postgresql://${PGUSER}:${PGPASSWORD}@${PGHOST}:${PGPORT}/${PGDATABASE}"
+          npm test
 
   flutter-customer-test:
     name: Customer App Tests

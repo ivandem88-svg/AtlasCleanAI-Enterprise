@@ -70,8 +70,8 @@ export const config: AppConfig = {
   databaseUrl: process.env.DATABASE_URL ?? 'postgresql://localhost:5432/atlascleanai?schema=public',
   redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
   jwt: {
-    secret: getEnv('JWT_SECRET', 'development-access-secret'),
-    refreshSecret: getEnv('JWT_REFRESH_SECRET', 'development-refresh-secret'),
+    secret: getEnv('JWT_SECRET'),
+    refreshSecret: getEnv('JWT_REFRESH_SECRET'),
     expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN ?? '7d',
   },
