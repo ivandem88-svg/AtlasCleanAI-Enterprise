@@ -3,18 +3,10 @@ const atlasAI = require('../services/atlasAI');
 
 const router = express.Router();
 
-/**
- * POST /api/chat
- * Body: { messages: [{role, content}, ...] }
- * Returns: { reply, usage }
- */
-router.post('/', async (req, res) => {
-  const { messages } = req.body;
-
+function validateMessages(messages) {
   if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: 'messages must be a non-empty array' });
+    return 'messages must be a non-empty array';
   }
-
   const valid = messages.every(
     (m) =>
       m &&
@@ -23,15 +15,25 @@ router.post('/', async (req, res) => {
       typeof m.content === 'string' &&
       m.content.trim().length > 0
   );
-
   if (!valid) {
-    return res.status(400).json({
-      error: 'Each message must have role ("user" or "assistant") and non-empty content string',
-    });
+    return 'Each message must have role ("user" or "assistant") and non-empty content string';
+  }
+  return null;
+}
+
+/**
+ * POST /api/chat
+ * Body: { messages: [{role, content}, ...] }
+ * Returns: { reply, usage }
+ */
+router.post('/', async (req, res) => {
+  const validationError = validateMessages(req.body.messages);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
   try {
-    const result = await atlasAI.chat(messages);
+    const result = await atlasAI.chat(req.body.messages);
     return res.json(result);
   } catch (err) {
     console.error('Atlas AI error:', err.message);
@@ -45,25 +47,9 @@ router.post('/', async (req, res) => {
  * Returns: text/event-stream (SSE)
  */
 router.post('/stream', async (req, res) => {
-  const { messages } = req.body;
-
-  if (!Array.isArray(messages) || messages.length === 0) {
-    return res.status(400).json({ error: 'messages must be a non-empty array' });
-  }
-
-  const valid = messages.every(
-    (m) =>
-      m &&
-      typeof m === 'object' &&
-      ['user', 'assistant'].includes(m.role) &&
-      typeof m.content === 'string' &&
-      m.content.trim().length > 0
-  );
-
-  if (!valid) {
-    return res.status(400).json({
-      error: 'Each message must have role ("user" or "assistant") and non-empty content string',
-    });
+  const validationError = validateMessages(req.body.messages);
+  if (validationError) {
+    return res.status(400).json({ error: validationError });
   }
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -71,7 +57,7 @@ router.post('/stream', async (req, res) => {
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    await atlasAI.chatStream(messages, (chunk) => {
+    await atlasAI.chatStream(req.body.messages, (chunk) => {
       res.write(`data: ${JSON.stringify({ chunk })}\n\n`);
     });
     res.write('data: [DONE]\n\n');

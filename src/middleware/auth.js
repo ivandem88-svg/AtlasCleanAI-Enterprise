@@ -1,5 +1,3 @@
-const express = require('express');
-
 /**
  * Simple API key middleware for protecting Atlas AI endpoints.
  * Set ATLAS_API_KEY in your environment to enable authentication.
