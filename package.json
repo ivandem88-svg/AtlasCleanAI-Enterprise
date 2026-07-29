@@ -1,0 +1,25 @@
+{
+  "name": "atlascleanai-enterprise",
+  "version": "1.0.0",
+  "description": "AI-powered enterprise cleaning management platform with Customer, Cleaner and Management applications, intelligent scheduling, payments, workforce management and Atlas AI.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://localhost:26831/ivandem88-svg/AtlasCleanAI-Enterprise.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "openai": "^7.1.0"
+  }
+}
