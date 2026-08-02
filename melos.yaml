@@ -1,0 +1,19 @@
+name: atlas_cleanai_enterprise
+
+packages:
+  - apps/*
+  - packages/*
+
+scripts:
+  analyze:
+    description: Analyze every Dart and Flutter package in the workspace.
+    run: dart run melos exec -- "flutter analyze"
+  test:
+    description: Run every package test suite.
+    run: dart run melos exec -- "flutter test"
+  format:check:
+    description: Verify that all Dart files are formatted.
+    run: dart format --output=none --set-exit-if-changed .
+  format:
+    description: Format all Dart files in the workspace.
+    run: dart format .

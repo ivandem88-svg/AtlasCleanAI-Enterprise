@@ -1,0 +1,31 @@
+name: Flutter CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop, staging]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Analyze, test, and format
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Resolve workspace dependencies
+        run: flutter pub get
+      - name: Bootstrap workspace
+        run: dart run melos bootstrap
+      - name: Check formatting
+        run: dart run melos run format:check
+      - name: Analyze
+        run: dart run melos run analyze
+      - name: Test
+        run: dart run melos run test
