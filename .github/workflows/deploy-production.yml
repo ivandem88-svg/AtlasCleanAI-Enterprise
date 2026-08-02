@@ -21,9 +21,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_REGION: ${{ vars.AWS_REGION || vars.CDK_DEFAULT_REGION || 'us-east-1' }}
       CDK_DEFAULT_ACCOUNT: ${{ vars.CDK_DEFAULT_ACCOUNT }}
-      CDK_DEFAULT_REGION: ${{ vars.CDK_DEFAULT_REGION }}
+      CDK_DEFAULT_REGION: ${{ vars.CDK_DEFAULT_REGION || vars.AWS_REGION || 'us-east-1' }}
       ATLAS_DOMAIN_NAME: ${{ vars.ATLAS_DOMAIN_NAME }}
       ATLAS_CERTIFICATE_ARN: ${{ vars.ATLAS_CERTIFICATE_ARN }}
       STAGE: production
@@ -33,7 +33,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION || vars.CDK_DEFAULT_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
