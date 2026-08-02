@@ -3,6 +3,8 @@ import { NextFunction, Request, Response } from 'express';
 import { processPaymentSchema, refundPaymentSchema } from '../../application/dtos/PaymentDto';
 import { ProcessPaymentUseCase } from '../../application/use-cases/payment/ProcessPaymentUseCase';
 import { RefundPaymentUseCase } from '../../application/use-cases/payment/RefundPaymentUseCase';
+import { UnauthorizedError } from '../../shared/errors/HttpError';
+import { AuthenticatedRequest } from '../../shared/types';
 import { validateSchema } from '../../shared/utils/validator';
 
 export class PaymentController {
@@ -11,10 +13,17 @@ export class PaymentController {
     private readonly refundPaymentUseCase: RefundPaymentUseCase,
   ) {}
 
-  process = async (request: Request, response: Response, next: NextFunction): Promise<void> => {
+  process = async (request: AuthenticatedRequest, response: Response, next: NextFunction): Promise<void> => {
     try {
+      const user = request.user;
+      if (!user) throw new UnauthorizedError();
+
       const payload = validateSchema(processPaymentSchema, request.body);
-      const payment = await this.processPaymentUseCase.execute({ ...payload, currency: payload.currency ?? 'USD' });
+      const payment = await this.processPaymentUseCase.execute({
+        ...payload,
+        userId: user.id,
+        currency: payload.currency ?? 'USD',
+      });
       response.status(201).json({ success: true, data: payment });
     } catch (error) {
       next(error);
