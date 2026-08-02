@@ -1,0 +1,159 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  CLEANER
+  MANAGER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING_VERIFICATION
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  AUTHORIZED
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentProvider {
+  STRIPE
+  MANUAL
+}
+
+model User {
+  id                  String      @id @default(uuid())
+  email               String      @unique
+  passwordHash        String
+  firstName           String
+  lastName            String
+  phone               String?
+  role                UserRole    @default(CUSTOMER)
+  status              UserStatus  @default(PENDING_VERIFICATION)
+  address             Json?
+  refreshTokenVersion Int         @default(0)
+  emailVerified       Boolean     @default(false)
+  preferences         Json
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  bookings            Booking[]
+  payments            Payment[]
+  reviews             Review[]
+}
+
+model Cleaner {
+  id                String    @id @default(uuid())
+  userId            String?   @unique
+  firstName         String
+  lastName          String
+  email             String    @unique
+  phone             String?
+  rating            Float     @default(5)
+  completedJobs     Int       @default(0)
+  skills            String[]
+  serviceAreas      String[]
+  availability      Json
+  vehicleAvailable  Boolean   @default(false)
+  backgroundChecked Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  bookings          Booking[]
+  reviews           Review[]
+}
+
+model Service {
+  id              String    @id @default(uuid())
+  name            String
+  description     String
+  category        String
+  durationMinutes Int
+  basePrice       Decimal   @db.Decimal(10, 2)
+  currency        String    @default("USD")
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  bookings        Booking[]
+}
+
+model Booking {
+  id              String        @id @default(uuid())
+  userId          String
+  cleanerId       String?
+  serviceId       String?
+  serviceType     String
+  address         Json
+  startTime       DateTime
+  endTime         DateTime
+  durationMinutes Int
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  status          BookingStatus @default(PENDING)
+  notes           String?
+  extras          String[]
+  aiMetadata      Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  user            User          @relation(fields: [userId], references: [id])
+  cleaner         Cleaner?      @relation(fields: [cleanerId], references: [id])
+  service         Service?      @relation(fields: [serviceId], references: [id])
+  payment         Payment?
+  review          Review?
+
+  @@index([userId, startTime])
+  @@index([cleanerId, startTime])
+}
+
+model Payment {
+  id              String          @id @default(uuid())
+  bookingId       String          @unique
+  userId          String
+  amount          Decimal         @db.Decimal(10, 2)
+  currency        String          @default("USD")
+  status          PaymentStatus   @default(PENDING)
+  provider        PaymentProvider @default(STRIPE)
+  paymentIntentId String?
+  refundId        String?
+  metadata        Json?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  booking         Booking         @relation(fields: [bookingId], references: [id])
+  user            User            @relation(fields: [userId], references: [id])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  bookingId String   @unique
+  userId    String
+  cleanerId String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  cleaner   Cleaner  @relation(fields: [cleanerId], references: [id])
+
+  @@index([cleanerId, createdAt])
+}
