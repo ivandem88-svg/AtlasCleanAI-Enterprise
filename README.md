@@ -67,7 +67,7 @@ Install the following on your workstation:
 
 - Docker Engine 24+
 - Docker Compose v2+
-- Node.js 20 LTS or newer
+- Node.js 22 LTS or newer
 - Flutter 3.13+
 - AWS CLI v2 for cloud deployments
 - Terraform 1.6+ if using the Terraform workflow
@@ -103,6 +103,26 @@ The backend expects the following core settings:
 - `PORT` (optional, defaults to `3000`)
 
 For local development, Docker Compose supplies working defaults. In shared or cloud environments, move secrets to environment-specific secret stores.
+
+## Atlas AI Chat Integration
+
+Atlas AI is the ChatGPT-powered assistant for cleaning operations. It supports full responses and Server-Sent Events via `/api/chat` and `/api/chat/stream`.
+
+Install the Node dependencies, copy `.env.example` to `.env`, and set `OPENAI_API_KEY`:
+
+```bash
+npm install
+cp .env.example .env
+npm start
+```
+
+The browser chat is available at `http://localhost:3000`. To protect chat endpoints, set `ATLAS_API_KEY` and supply it using the `x-api-key` header; the browser UI provides a memory-only API-key field. Requests accept at most 20 messages, 4,000 characters per message, and 16,000 characters in total.
+
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `OPENAI_API_KEY` | Yes | — | OpenAI API key |
+| `OPENAI_MODEL` | No | `gpt-4o` | OpenAI model |
+| `ATLAS_API_KEY` | No | — | Enables API-key authentication |
 
 ## CI/CD Strategy
 
@@ -219,8 +239,8 @@ AI-powered cleaning services ecosystem.
 
 ## Architecture
 
-Flutter frontend applications  
-Cloud backend infrastructure  
+Flutter frontend applications
+Cloud backend infrastructure
 AI-powered operational intelligence
 
 ## Development
