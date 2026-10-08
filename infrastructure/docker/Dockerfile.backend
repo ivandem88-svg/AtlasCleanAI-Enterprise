@@ -1,0 +1,21 @@
+FROM node:20-alpine AS dependencies
+WORKDIR /app/backend
+COPY backend/package*.json ./
+RUN npm ci
+
+FROM node:20-alpine AS build
+WORKDIR /app/backend
+COPY --from=dependencies /app/backend/node_modules ./node_modules
+COPY backend/ ./
+RUN if [ -f prisma/schema.prisma ]; then npx prisma generate; fi
+RUN if [ -f src/infrastructure/database/prisma/schema.prisma ]; then npx prisma generate --schema src/infrastructure/database/prisma/schema.prisma; fi
+RUN npm run build
+RUN npm prune --omit=dev
+
+FROM node:20-alpine AS runtime
+WORKDIR /app/backend
+ENV NODE_ENV=production
+ENV PORT=3000
+COPY --from=build /app/backend ./
+EXPOSE 3000
+CMD ["node", "dist/src/server.js"]

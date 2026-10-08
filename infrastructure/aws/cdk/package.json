@@ -1,0 +1,21 @@
+{
+  "name": "atlasclean-cdk",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AWS CDK infrastructure for AtlasCleanAI Enterprise",
+  "scripts": {
+    "build": "tsc --pretty",
+    "synth": "cdk synth --app \"npx ts-node --prefer-ts-exts bin/atlasclean.ts\"",
+    "deploy:staging": "cdk deploy AtlasClean-staging --require-approval never --app \"npx ts-node --prefer-ts-exts bin/atlasclean.ts\" -c stage=staging",
+    "deploy:production": "cdk deploy AtlasClean-production --require-approval never --app \"npx ts-node --prefer-ts-exts bin/atlasclean.ts\" -c stage=production"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.156.0",
+    "constructs": "^10.3.0",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}

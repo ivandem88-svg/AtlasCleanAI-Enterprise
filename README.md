@@ -1,68 +1,248 @@
-# AtlasCleanAI-Enterprise
-AI-powered enterprise cleaning management platform with Customer, Cleaner and Management applications, intelligent scheduling, payments, workforce management and Atlas AI.
+# AtlasCleanAI Enterprise
 
-## Atlas AI — ChatGPT Integration
+AtlasCleanAI Enterprise is a production-oriented monorepo for an AI-powered cleaning services platform. The platform serves customers booking cleaning services, field cleaners managing schedules and job execution, and internal operations teams overseeing workforce, routing, billing, and service quality.
 
-Atlas AI is the intelligent assistant embedded in AtlasCleanAI Enterprise, powered by the OpenAI ChatGPT API (GPT-4o by default).
+## Repository Purpose
 
-### Features
-- Real-time chat with Atlas, your enterprise cleaning AI assistant
-- Streaming responses (SSE) via `/api/chat/stream`
-- Conversation history preserved within a session
-- Optional API key authentication for multi-tenant deployments
+This repository contains the operational foundation for the platform:
 
-### Setup
+- local development infrastructure with Docker Compose
+- AWS deployment infrastructure with both CDK and Terraform options
+- GitHub Actions pipelines for continuous integration and staged deployments
+- shared Flutter packages for design and API integration consistency
+- architecture, API, development, and deployment documentation
 
-1. **Install Node.js 22 or newer**
+## Platform Capabilities
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+AtlasCleanAI Enterprise is designed to support:
 
-3. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env and set your OPENAI_API_KEY
-   ```
+- customer booking and service lifecycle management
+- cleaner onboarding, scheduling, and work assignment flows
+- secure authentication with short-lived access tokens and refresh tokens
+- Redis-backed caching, session coordination, and asynchronous work orchestration
+- PostgreSQL-backed transactional data for bookings, cleaners, pricing, and billing
+- AI-powered scheduling, dispatch optimization, and service recommendations
+- observability, environment isolation, and repeatable cloud deployments
 
-4. **Start the server**
-   ```bash
-   npm start
-   # or for development with auto-reload:
-   npm run dev
-   ```
+## Monorepo Structure
 
-5. Open [http://localhost:3000](http://localhost:3000) to chat with Atlas.
-
-### API Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/health` | Health check |
-| `POST` | `/api/chat` | Send messages, receive full reply |
-| `POST` | `/api/chat/stream` | Send messages, receive SSE stream |
-
-#### Chat request body
-```json
-{
-  "messages": [
-    { "role": "user", "content": "How do I reschedule a cleaning job?" }
-  ]
-}
+```text
+.
+├── .github/workflows/          # CI and deployment automation
+├── docs/                       # Architecture, API, dev, and deployment guides
+├── infrastructure/
+│   ├── aws/cdk/                # AWS CDK application
+│   ├── docker/                 # Container build definitions
+│   ├── nginx/                  # Reverse proxy and TLS configuration
+│   └── terraform/              # Terraform alternative to CDK
+├── packages/
+│   ├── atlas_api_client/       # Shared Dart API client
+│   └── atlas_design_system/    # Shared Flutter design system
+└── docker-compose.yml          # Local development dependencies and services
 ```
 
-#### Authentication (optional)
-Set `ATLAS_API_KEY` in `.env` and include the header `x-api-key: <key>` on all `/api/chat` requests. The browser UI has a memory-only API key field for this mode; it does not persist the key.
+## Architecture Overview
 
-Chat requests accept at most 20 messages, 4,000 characters per message, and 16,000 characters in total.
+The recommended runtime architecture is:
 
-### Environment Variables
+- **Ingress**: NGINX locally and Application Load Balancer in AWS
+- **API tier**: containerized Node.js backend running on ECS Fargate
+- **Persistence**: PostgreSQL for relational data, Redis for cache and background workflows
+- **Secrets**: AWS Secrets Manager and GitHub Actions secrets/OIDC integration
+- **Observability**: CloudWatch logs, alarms, and health endpoints
+- **Clients**: Flutter customer and cleaner applications using shared packages from `packages/`
+
+Detailed design guidance is available in:
+
+- [`docs/architecture.md`](docs/architecture.md)
+- [`docs/api.md`](docs/api.md)
+- [`docs/development.md`](docs/development.md)
+- [`docs/deployment.md`](docs/deployment.md)
+
+## Local Development
+
+### Prerequisites
+
+Install the following on your workstation:
+
+- Docker Engine 24+
+- Docker Compose v2+
+- Node.js 22 LTS or newer
+- Flutter 3.13+
+- AWS CLI v2 for cloud deployments
+- Terraform 1.6+ if using the Terraform workflow
+
+### Start supporting services
+
+```bash
+docker compose up -d postgres redis nginx
+```
+
+### Start the full local stack
+
+```bash
+docker compose up --build
+```
+
+The default local endpoints are:
+
+- API: `http://localhost:3000`
+- NGINX: `http://localhost` and `https://localhost`
+- PostgreSQL: `localhost:5432`
+- Redis: `localhost:6379`
+
+### Environment variables
+
+The backend expects the following core settings:
+
+- `NODE_ENV`
+- `DATABASE_URL`
+- `REDIS_URL`
+- `JWT_SECRET`
+- `JWT_REFRESH_SECRET`
+- `PORT` (optional, defaults to `3000`)
+
+For local development, Docker Compose supplies working defaults. In shared or cloud environments, move secrets to environment-specific secret stores.
+
+## Atlas AI Chat Integration
+
+Atlas AI is the ChatGPT-powered assistant for cleaning operations. It supports full responses and Server-Sent Events via `/api/chat` and `/api/chat/stream`.
+
+Install the Node dependencies, copy `.env.example` to `.env`, and set `OPENAI_API_KEY`:
+
+```bash
+npm install
+cp .env.example .env
+npm start
+```
+
+The browser chat is available at `http://localhost:3000`. To protect chat endpoints, set `ATLAS_API_KEY` and supply it using the `x-api-key` header; the browser UI provides a memory-only API-key field. Requests accept at most 20 messages, 4,000 characters per message, and 16,000 characters in total.
 
 | Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `OPENAI_API_KEY` | ✅ | — | Your OpenAI API key |
-| `OPENAI_MODEL` | | `gpt-4o` | OpenAI model to use |
-| `PORT` | | `3000` | HTTP server port |
-| `NODE_ENV` | | `development` | Runtime environment |
-| `ATLAS_API_KEY` | | — | Enables API key auth when set |
+| --- | --- | --- | --- |
+| `OPENAI_API_KEY` | Yes | — | OpenAI API key |
+| `OPENAI_MODEL` | No | `gpt-4o` | OpenAI model |
+| `ATLAS_API_KEY` | No | — | Enables API-key authentication |
+
+## CI/CD Strategy
+
+The repository includes three GitHub Actions workflows:
+
+- **CI Pipeline**: validates backend quality, Flutter packages/apps, and runs a repository security scan
+- **Deploy Staging**: builds and deploys infrastructure/application changes to the staging AWS account
+- **Deploy Production**: gated production deployment using GitHub Environments and AWS OIDC
+
+### Required GitHub secrets and variables
+
+Configure these repository or environment values before enabling deployments:
+
+| Name | Type | Purpose |
+| --- | --- | --- |
+| `AWS_ROLE_TO_ASSUME` | Secret/Variable | IAM role assumed through OIDC |
+| `AWS_REGION` | Variable | Target AWS region |
+| `CDK_DEFAULT_ACCOUNT` | Variable | AWS account ID for CDK deployments |
+| `CDK_DEFAULT_REGION` | Variable | AWS region for CDK deployments |
+| `ATLAS_DOMAIN_NAME` | Variable | Public DNS name for the application |
+| `ATLAS_CERTIFICATE_ARN` | Secret/Variable | ACM certificate ARN for HTTPS |
+| `ECR_BACKEND_REPOSITORY` | Variable | Optional existing ECR repository name |
+
+## Infrastructure Options
+
+Two infrastructure-as-code implementations are provided so teams can choose the best fit for their delivery model.
+
+### AWS CDK
+
+Use the CDK project when you want strongly typed infrastructure definitions in TypeScript and closer integration with the application delivery pipeline.
+
+```bash
+cd infrastructure/aws/cdk
+npm install
+npm run synth
+```
+
+### Terraform
+
+Use the Terraform configuration when you want provider-agnostic workflow conventions, stateful plan/apply operations, or to integrate with existing Terraform estates.
+
+```bash
+cd infrastructure/terraform
+terraform init
+terraform plan
+```
+
+## Shared Packages
+
+### `atlas_design_system`
+
+A reusable Flutter package with:
+
+- Atlas brand colors
+- consistent typography tokens
+- pre-styled buttons, cards, and text fields
+- a theme definition for customer and cleaner applications
+
+### `atlas_api_client`
+
+A reusable Dart package for:
+
+- HTTP communication with the AtlasCleanAI backend
+- consistent JSON parsing
+- standard success/error response handling
+- authenticated requests using bearer tokens
+
+## Security Principles
+
+This repository follows a production-minded baseline:
+
+- no plaintext production secrets in source control
+- isolated network tiers for public, application, and data resources
+- TLS termination at the edge
+- RDS and ElastiCache deployed into private subnets
+- least-privilege IAM roles for workloads and deployment automation
+- automated vulnerability scanning during CI
+
+## Operational Notes
+
+- Use staging as the first destination for schema, infrastructure, and deployment validation.
+- Treat production deployments as environment-gated and reviewable operations.
+- Prefer immutable image deployments via ECR rather than patching live containers.
+- Keep infrastructure and application rollouts traceable through GitHub Actions workflow history.
+
+## Next Steps
+
+1. Add the backend service source code in `backend/` if it does not yet exist.
+2. Add Flutter applications in `apps/customer_app` and `apps/cleaner_app` if they are not yet present.
+3. Wire the shared Dart packages into the consuming mobile apps.
+4. Provision AWS accounts, OIDC roles, and environment protections before enabling production deployment.
+5. Establish migration, seeding, and backup policies for PostgreSQL.
+
+## License
+
+This repository should use the organization-approved proprietary or commercial license for AtlasCleanAI Enterprise deployment assets.
+AI-powered cleaning services ecosystem.
+
+## Platforms
+
+- Customer App
+- Cleaner App
+- Management App
+- Web Portal
+
+## Core Systems
+
+- Booking Engine
+- Workforce Management
+- Payments
+- Messaging
+- Training Platform
+- Atlas AI Intelligence Layer
+
+## Architecture
+
+Flutter frontend applications
+Cloud backend infrastructure
+AI-powered operational intelligence
+
+## Development
+
+This repository contains the complete AtlasCleanAI Enterprise platform.
