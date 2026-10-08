@@ -167,7 +167,13 @@
   <div class="status-dot" id="status-dot" title="Atlas AI online"></div>
 </header>
 
-<div id="chat-container">
+<div
+  id="chat-container"
+  role="log"
+  aria-label="Atlas conversation"
+  aria-live="polite"
+  aria-relevant="additions text"
+>
   <div class="welcome" id="welcome-msg">
     <h2>Hello, I'm Atlas 👋</h2>
     <p>Your AI assistant for enterprise cleaning management.<br>Ask me about scheduling, workforce, payments, and more.</p>
@@ -179,6 +185,7 @@
     id="user-input"
     placeholder="Ask Atlas anything…"
     rows="1"
+    maxlength="4000"
     aria-label="Message Atlas AI"
   ></textarea>
   <button id="send-btn" aria-label="Send message">Send</button>
@@ -193,6 +200,32 @@
   const apiKeyInput   = document.getElementById('api-key-input');
 
   const history = []; // [{role, content}]
+  const MAX_MESSAGES = 20;
+  const MAX_MESSAGE_LENGTH = 4000;
+  const MAX_TOTAL_CONTENT_LENGTH = 16000;
+  let isSending = false;
+
+  function buildRequestHistory(currentMessage) {
+    const messages = [currentMessage];
+    let totalContentLength = currentMessage.content.length;
+
+    for (let index = history.length - 2; index >= 0 && messages.length < MAX_MESSAGES - 1; index -= 2) {
+      const pair = history.slice(index, index + 2).map((message) => ({
+        role: message.role,
+        content: message.content.slice(0, MAX_MESSAGE_LENGTH),
+      }));
+      const pairLength = pair.reduce((total, message) => total + message.content.length, 0);
+
+      if (pair.length !== 2 || totalContentLength + pairLength > MAX_TOTAL_CONTENT_LENGTH) {
+        break;
+      }
+
+      messages.unshift(...pair);
+      totalContentLength += pairLength;
+    }
+
+    return messages;
+  }
 
   function addMessage(role, content) {
     const div = document.createElement('div');
@@ -220,6 +253,7 @@
     div.appendChild(name);
     const ind = document.createElement('div');
     ind.className = 'typing-indicator';
+    ind.setAttribute('aria-hidden', 'true');
     ind.innerHTML = '<span></span><span></span><span></span>';
     div.appendChild(ind);
     chatContainer.appendChild(div);
@@ -229,17 +263,23 @@
 
   async function sendMessage() {
     const content = userInput.value.trim();
-    if (!content) return;
+    if (isSending || !content) return;
+    if (content.length > MAX_MESSAGE_LENGTH) {
+      userInput.setCustomValidity(`Messages must be ${MAX_MESSAGE_LENGTH.toLocaleString()} characters or fewer.`);
+      userInput.reportValidity();
+      return;
+    }
 
+    userInput.setCustomValidity('');
+    isSending = true;
     welcomeMsg.remove();
     userInput.value = '';
     userInput.style.height = 'auto';
     sendBtn.disabled = true;
 
     addMessage('user', content);
-    history.push({ role: 'user', content });
-
     const indicator = addTypingIndicator();
+    const message = { role: 'user', content };
 
     try {
       const headers = { 'Content-Type': 'application/json' };
@@ -251,7 +291,7 @@
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ messages: history }),
+        body: JSON.stringify({ messages: buildRequestHistory(message) }),
       });
 
       if (!res.ok) {
@@ -260,15 +300,19 @@
       }
 
       const { reply } = await res.json();
+      if (typeof reply !== 'string') {
+        throw new Error('Atlas returned an invalid response');
+      }
       indicator.remove();
       addMessage('assistant', reply);
-      history.push({ role: 'assistant', content: reply });
+      history.push(message, { role: 'assistant', content: reply });
     } catch (err) {
       indicator.remove();
       addMessage('assistant', `⚠️ ${err.message}`);
       statusDot.classList.add('offline');
       statusDot.title = 'Atlas AI offline';
     } finally {
+      isSending = false;
       sendBtn.disabled = false;
       userInput.focus();
     }
