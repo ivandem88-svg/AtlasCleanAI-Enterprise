@@ -1,17 +1,16 @@
 require('dotenv').config();
 
 const express = require('express');
-const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const { apiKeyAuth } = require('./src/middleware/auth');
 const chatRouter = require('./src/routes/chat');
+const atlasAI = require('./src/services/atlasAI');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '64kb' }));
 app.use(express.static(path.join(__dirname, 'src/public')));
 
 const generalLimiter = rateLimit({
@@ -29,8 +28,14 @@ const chatLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-// Health check
-app.get('/api/health', (_req, res) => res.json({ status: 'ok', ai: 'Atlas (ChatGPT)' }));
+app.get('/api/health', (_req, res) => {
+  const configured = atlasAI.isConfigured();
+  return res.status(configured ? 200 : 503).json({
+    status: configured ? 'ok' : 'degraded',
+    ai: 'Atlas (ChatGPT)',
+    configured,
+  });
+});
 
 // Atlas AI chat endpoints (protected)
 app.use('/api/chat', chatLimiter, apiKeyAuth, chatRouter);
@@ -40,9 +45,16 @@ app.get('/{*path}', generalLimiter, (_req, res) => {
   res.sendFile(path.join(__dirname, 'src/public/index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`AtlasCleanAI Enterprise running on http://localhost:${PORT}`);
-  console.log(`Atlas AI model: ${process.env.OPENAI_MODEL || 'gpt-4o'}`);
-});
+function startServer() {
+  return app.listen(PORT, () => {
+    console.log(`AtlasCleanAI Enterprise running on http://localhost:${PORT}`);
+    console.log(`Atlas AI model: ${process.env.OPENAI_MODEL || 'gpt-4o'}`);
+  });
+}
+
+if (require.main === module) {
+  startServer();
+}
 
 module.exports = app;
+module.exports.startServer = startServer;

@@ -13,25 +13,27 @@ Atlas AI is the intelligent assistant embedded in AtlasCleanAI Enterprise, power
 
 ### Setup
 
-1. **Install dependencies**
+1. **Install Node.js 22 or newer**
+
+2. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. **Configure environment**
+3. **Configure environment**
    ```bash
    cp .env.example .env
    # Edit .env and set your OPENAI_API_KEY
    ```
 
-3. **Start the server**
+4. **Start the server**
    ```bash
    npm start
    # or for development with auto-reload:
    npm run dev
    ```
 
-4. Open [http://localhost:3000](http://localhost:3000) to chat with Atlas.
+5. Open [http://localhost:3000](http://localhost:3000) to chat with Atlas.
 
 ### API Endpoints
 
@@ -51,7 +53,9 @@ Atlas AI is the intelligent assistant embedded in AtlasCleanAI Enterprise, power
 ```
 
 #### Authentication (optional)
-Set `ATLAS_API_KEY` in `.env` and include the header `x-api-key: <key>` on all `/api/chat` requests.
+Set `ATLAS_API_KEY` in `.env` and include the header `x-api-key: <key>` on all `/api/chat` requests. The browser UI has a memory-only API key field for this mode; it does not persist the key.
+
+Chat requests accept at most 20 messages, 4,000 characters per message, and 16,000 characters in total.
 
 ### Environment Variables
 
@@ -60,4 +64,5 @@ Set `ATLAS_API_KEY` in `.env` and include the header `x-api-key: <key>` on all `
 | `OPENAI_API_KEY` | ✅ | — | Your OpenAI API key |
 | `OPENAI_MODEL` | | `gpt-4o` | OpenAI model to use |
 | `PORT` | | `3000` | HTTP server port |
+| `NODE_ENV` | | `development` | Runtime environment |
 | `ATLAS_API_KEY` | | — | Enables API key auth when set |

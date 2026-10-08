@@ -1,3 +1,5 @@
+const { timingSafeEqual } = require('node:crypto');
+
 /**
  * Simple API key middleware for protecting Atlas AI endpoints.
  * Set ATLAS_API_KEY in your environment to enable authentication.
@@ -10,7 +12,14 @@ function apiKeyAuth(req, res, next) {
   }
 
   const provided = req.headers['x-api-key'];
-  if (!provided || provided !== configuredKey) {
+  const providedBuffer = typeof provided === 'string' ? Buffer.from(provided) : null;
+  const configuredBuffer = Buffer.from(configuredKey);
+  const matches =
+    providedBuffer &&
+    providedBuffer.length === configuredBuffer.length &&
+    timingSafeEqual(providedBuffer, configuredBuffer);
+
+  if (!matches) {
     return res.status(401).json({ error: 'Unauthorized: invalid or missing API key' });
   }
 

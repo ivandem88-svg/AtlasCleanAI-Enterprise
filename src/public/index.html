@@ -29,9 +29,19 @@
     header .logo { font-size: 22px; font-weight: 700; letter-spacing: .5px; }
     header .sub  { font-size: 13px; opacity: .75; }
 
+    #api-key-input {
+      margin-left: auto;
+      width: 220px;
+      padding: 7px 10px;
+      border: 1px solid rgba(255,255,255,.5);
+      border-radius: 6px;
+      color: #1a202c;
+      font-size: 13px;
+    }
+
     .status-dot {
       width: 10px; height: 10px; border-radius: 50%;
-      background: #48bb78; margin-left: auto; flex-shrink: 0;
+      background: #48bb78; flex-shrink: 0;
     }
     .status-dot.offline { background: #fc8181; }
 
@@ -147,6 +157,13 @@
     <div class="logo">⚡ AtlasCleanAI Enterprise</div>
     <div class="sub">Powered by Atlas AI (ChatGPT)</div>
   </div>
+  <input
+    id="api-key-input"
+    type="password"
+    placeholder="API key (if required)"
+    aria-label="Atlas API key, if required"
+    autocomplete="current-password"
+  />
   <div class="status-dot" id="status-dot" title="Atlas AI online"></div>
 </header>
 
@@ -173,6 +190,7 @@
   const sendBtn       = document.getElementById('send-btn');
   const statusDot     = document.getElementById('status-dot');
   const welcomeMsg    = document.getElementById('welcome-msg');
+  const apiKeyInput   = document.getElementById('api-key-input');
 
   const history = []; // [{role, content}]
 
@@ -224,9 +242,15 @@
     const indicator = addTypingIndicator();
 
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      const apiKey = apiKeyInput.value.trim();
+      if (apiKey) {
+        headers['X-API-Key'] = apiKey;
+      }
+
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ messages: history }),
       });
 
@@ -267,7 +291,10 @@
 
   // Verify Atlas AI is reachable
   fetch('/api/health')
-    .then((r) => r.json())
+    .then((r) => {
+      if (!r.ok) throw new Error('Atlas AI is unavailable');
+      return r.json();
+    })
     .then(() => {
       statusDot.classList.remove('offline');
       statusDot.title = 'Atlas AI online';
