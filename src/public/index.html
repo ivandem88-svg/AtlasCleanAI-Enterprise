@@ -247,13 +247,13 @@
   function addTypingIndicator() {
     const div = document.createElement('div');
     div.className = 'message assistant';
+    div.setAttribute('aria-hidden', 'true');
     const name = document.createElement('div');
     name.className = 'name';
     name.textContent = 'Atlas';
     div.appendChild(name);
     const ind = document.createElement('div');
     ind.className = 'typing-indicator';
-    ind.setAttribute('aria-hidden', 'true');
     ind.innerHTML = '<span></span><span></span><span></span>';
     div.appendChild(ind);
     chatContainer.appendChild(div);
