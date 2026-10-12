@@ -112,7 +112,7 @@ terraform validate
 ### Backend runtime
 
 - `DATABASE_URL`, or the `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` settings
-- `DB_SSLMODE` when PostgreSQL requires TLS (for example, `require` on AWS RDS)
+- `DB_SSLMODE` when PostgreSQL requires TLS (for example, `require` on AWS RDS); it applies only to the split `DB_*` settings, so with `DATABASE_URL` add `sslmode=require` to the URL instead
 - `REDIS_URL`
 - `JWT_SECRET`
 - `JWT_REFRESH_SECRET`
