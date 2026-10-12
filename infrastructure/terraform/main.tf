@@ -516,7 +516,9 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "DB_NAME", value = var.db_name },
         { name = "DB_USER", value = var.db_username },
         { name = "DB_SSLMODE", value = "require" },
-        { name = "REDIS_URL", value = "rediss://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379" }
+        { name = "REDIS_URL", value = "rediss://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379" },
+        # Secrets are read at task start; this changes with any secret version so a rotated secret redeploys the service.
+        { name = "SECRETS_REVISION", value = sha256(join(",", [for version in aws_secretsmanager_secret_version.app : version.version_id])) }
       ]
       secrets = [
         { name = "DB_PASSWORD", valueFrom = aws_secretsmanager_secret.app["db-password"].arn },
