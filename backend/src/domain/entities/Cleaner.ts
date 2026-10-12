@@ -1,5 +1,7 @@
 import { TimeSlot } from '../value-objects/TimeSlot';
 
+const MS_PER_HOUR = 60 * 60 * 1000;
+
 export interface CleanerAvailability {
   dayOfWeek: number;
   startHour: number;
@@ -65,11 +67,13 @@ export class Cleaner {
 
   isAvailable(slot: TimeSlot): boolean {
     const weekday = slot.start.getUTCDay();
-    const startHour = slot.start.getUTCHours();
-    const endHour = slot.end.getUTCHours();
+    const dayStart = Date.UTC(slot.start.getUTCFullYear(), slot.start.getUTCMonth(), slot.start.getUTCDate());
 
     return this.availability.some(
-      (window) => window.dayOfWeek === weekday && startHour >= window.startHour && endHour <= window.endHour,
+      (window) =>
+        window.dayOfWeek === weekday &&
+        slot.start.getTime() >= dayStart + window.startHour * MS_PER_HOUR &&
+        slot.end.getTime() <= dayStart + window.endHour * MS_PER_HOUR,
     );
   }
 }

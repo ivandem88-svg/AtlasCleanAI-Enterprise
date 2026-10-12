@@ -123,6 +123,7 @@ describe('Booking routes', () => {
 
     const tokens = jwtService.generateAuthTokens({ id: user.id, email: user.email, role: user.role, tokenVersion: 0 });
     const start = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    start.setUTCHours(10, 0, 0, 0);
     const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
 
     const response = await request(app)
