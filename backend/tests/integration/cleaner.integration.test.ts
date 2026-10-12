@@ -32,7 +32,7 @@ const cleaner = new Cleaner({
 describe('Cleaner routes', () => {
   const app = createApp({ cleanerRepository: new InMemoryCleanerRepository([cleaner]) });
 
-  it('does not expose contact details when listing cleaners', async () => {
+  it('does not expose contact details or schedules when listing cleaners', async () => {
     const response = await request(app).get('/api/v1/cleaners');
 
     expect(response.status).toBe(200);
@@ -41,9 +41,10 @@ describe('Cleaner routes', () => {
     expect(response.body.data[0]).not.toHaveProperty('email');
     expect(response.body.data[0]).not.toHaveProperty('phone');
     expect(response.body.data[0]).not.toHaveProperty('userId');
+    expect(response.body.data[0]).not.toHaveProperty('availability');
   });
 
-  it('does not expose contact details when listing available cleaners', async () => {
+  it('does not expose contact details or schedules when listing available cleaners', async () => {
     const response = await request(app)
       .get('/api/v1/cleaners')
       .query({ start: '2030-01-07T09:00:00Z', end: '2030-01-07T11:00:00Z', postalCode: '94107' });
@@ -53,5 +54,6 @@ describe('Cleaner routes', () => {
     expect(response.body.data[0]).not.toHaveProperty('email');
     expect(response.body.data[0]).not.toHaveProperty('phone');
     expect(response.body.data[0]).not.toHaveProperty('userId');
+    expect(response.body.data[0]).not.toHaveProperty('availability');
   });
 });

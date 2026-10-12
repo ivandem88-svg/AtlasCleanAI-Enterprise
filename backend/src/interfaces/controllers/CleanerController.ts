@@ -13,7 +13,6 @@ const toPublicCleaner = (cleaner: Cleaner) => ({
   completedJobs: cleaner.completedJobs,
   skills: cleaner.skills,
   serviceAreas: cleaner.serviceAreas,
-  availability: cleaner.availability,
   vehicleAvailable: cleaner.vehicleAvailable,
   backgroundChecked: cleaner.backgroundChecked,
   createdAt: cleaner.createdAt,
