@@ -72,7 +72,10 @@ export class CleanerRepository implements ICleanerRepository {
 
   async findAvailable(slot: TimeSlot, postalCode?: string): Promise<Cleaner[]> {
     const records = await prisma.cleaner.findMany({
-      where: postalCode ? { serviceAreas: { has: postalCode } } : undefined,
+      where: {
+        backgroundChecked: true,
+        ...(postalCode ? { serviceAreas: { has: postalCode } } : {}),
+      },
       orderBy: { createdAt: 'desc' },
     });
 

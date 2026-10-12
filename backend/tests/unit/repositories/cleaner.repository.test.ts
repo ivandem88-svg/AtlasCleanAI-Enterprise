@@ -1,5 +1,6 @@
 import { CleanerRepository } from '../../../src/infrastructure/database/repositories/CleanerRepository';
 import { prisma } from '../../../src/config/database';
+import { TimeSlot } from '../../../src/domain/value-objects/TimeSlot';
 
 jest.mock('../../../src/config/database', () => ({
   prisma: {
@@ -55,5 +56,32 @@ describe('CleanerRepository availability parsing', () => {
     findMany.mockResolvedValue([buildRecord([window])]);
 
     await expect(new CleanerRepository().findAll()).rejects.toThrow('invalid time window');
+  });
+});
+
+describe('CleanerRepository.findAvailable', () => {
+  const slot = new TimeSlot(new Date('2030-01-01T09:00:00Z'), new Date('2030-01-01T11:00:00Z'));
+
+  beforeEach(() => {
+    findMany.mockReset();
+    findMany.mockResolvedValue([]);
+  });
+
+  it('only queries cleaners that passed their background check', async () => {
+    await new CleanerRepository().findAvailable(slot);
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { backgroundChecked: true } }),
+    );
+  });
+
+  it('keeps the background check filter when narrowing by postal code', async () => {
+    await new CleanerRepository().findAvailable(slot, '94107');
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { backgroundChecked: true, serviceAreas: { has: '94107' } },
+      }),
+    );
   });
 });
