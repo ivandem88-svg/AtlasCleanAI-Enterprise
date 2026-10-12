@@ -26,13 +26,20 @@ jobs:
       CDK_DEFAULT_REGION: ${{ vars.CDK_DEFAULT_REGION || vars.AWS_REGION || 'us-east-1' }}
       ATLAS_DOMAIN_NAME: ${{ vars.ATLAS_DOMAIN_NAME }}
       ATLAS_CERTIFICATE_ARN: ${{ vars.ATLAS_CERTIFICATE_ARN }}
+      AWS_ROLE_TO_ASSUME: ${{ vars.AWS_ROLE_TO_ASSUME || secrets.AWS_ROLE_TO_ASSUME }}
       STAGE: production
     steps:
       - uses: actions/checkout@v4
+      - name: Validate AWS role configuration
+        run: |
+          if [[ -z "$AWS_ROLE_TO_ASSUME" ]]; then
+            echo "::error::Set AWS_ROLE_TO_ASSUME in the production GitHub Environment variables or secrets."
+            exit 1
+          fi
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Setup Node.js
         uses: actions/setup-node@v4
