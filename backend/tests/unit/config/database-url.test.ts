@@ -1,6 +1,10 @@
 const loadDatabaseUrl = (env: Record<string, string | undefined>): string => {
   const previous = { ...process.env };
-  delete process.env.DATABASE_URL;
+  for (const key of Object.keys(process.env)) {
+    if (key === 'DATABASE_URL' || key.startsWith('DB_')) {
+      delete process.env[key];
+    }
+  }
   Object.assign(process.env, env);
 
   try {
