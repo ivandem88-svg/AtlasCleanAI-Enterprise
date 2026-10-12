@@ -4,6 +4,7 @@ import { prisma } from '../../../config/database';
 import { Cleaner, CleanerAvailability } from '../../../domain/entities/Cleaner';
 import { ICleanerRepository } from '../../../domain/repositories/ICleanerRepository';
 import { TimeSlot } from '../../../domain/value-objects/TimeSlot';
+import { logger } from '../../../shared/utils/logger';
 
 const parseAvailability = (value: Prisma.JsonValue): CleanerAvailability[] => {
   if (!Array.isArray(value)) {
@@ -59,6 +60,19 @@ const toDomain = (record: PrismaCleaner): Cleaner =>
     updatedAt: record.updatedAt,
   });
 
+const toDomainList = (records: PrismaCleaner[]): Cleaner[] =>
+  records.flatMap((record) => {
+    try {
+      return [toDomain(record)];
+    } catch (error) {
+      logger.error('Skipping cleaner with invalid stored data', {
+        cleanerId: record.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return [];
+    }
+  });
+
 export class CleanerRepository implements ICleanerRepository {
   async findById(id: string): Promise<Cleaner | null> {
     const record = await prisma.cleaner.findUnique({ where: { id } });
@@ -67,7 +81,7 @@ export class CleanerRepository implements ICleanerRepository {
 
   async findAll(): Promise<Cleaner[]> {
     const records = await prisma.cleaner.findMany({ orderBy: { createdAt: 'desc' } });
-    return records.map(toDomain);
+    return toDomainList(records);
   }
 
   async findAvailable(slot: TimeSlot, postalCode?: string): Promise<Cleaner[]> {
@@ -79,6 +93,6 @@ export class CleanerRepository implements ICleanerRepository {
       orderBy: { createdAt: 'desc' },
     });
 
-    return records.map(toDomain).filter((cleaner) => cleaner.isAvailable(slot));
+    return toDomainList(records).filter((cleaner) => cleaner.isAvailable(slot));
   }
 }

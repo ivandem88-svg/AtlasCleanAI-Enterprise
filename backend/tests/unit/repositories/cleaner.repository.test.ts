@@ -1,6 +1,11 @@
 import { CleanerRepository } from '../../../src/infrastructure/database/repositories/CleanerRepository';
 import { prisma } from '../../../src/config/database';
 import { TimeSlot } from '../../../src/domain/value-objects/TimeSlot';
+import { logger } from '../../../src/shared/utils/logger';
+
+jest.mock('../../../src/shared/utils/logger', () => ({
+  logger: { error: jest.fn() },
+}));
 
 jest.mock('../../../src/config/database', () => ({
   prisma: {
@@ -12,9 +17,10 @@ jest.mock('../../../src/config/database', () => ({
 }));
 
 const findMany = prisma.cleaner.findMany as unknown as jest.Mock;
+const findUnique = prisma.cleaner.findUnique as unknown as jest.Mock;
 
-const buildRecord = (availability: unknown) => ({
-  id: '38193f1e-e79a-4d0b-9f0e-40876dcd3a5d',
+const buildRecord = (availability: unknown, id = '38193f1e-e79a-4d0b-9f0e-40876dcd3a5d') => ({
+  id,
   userId: null,
   firstName: 'Ready',
   lastName: 'Cleaner',
@@ -34,6 +40,8 @@ const buildRecord = (availability: unknown) => ({
 describe('CleanerRepository availability parsing', () => {
   beforeEach(() => {
     findMany.mockReset();
+    findUnique.mockReset();
+    (logger.error as jest.Mock).mockReset();
   });
 
   it('accepts valid availability windows', async () => {
@@ -54,9 +62,41 @@ describe('CleanerRepository availability parsing', () => {
     ['fractional hours', { dayOfWeek: 2, startHour: 8.5, endHour: 18 }],
     ['a fractional weekday', { dayOfWeek: 1.5, startHour: 8, endHour: 18 }],
   ])('rejects %s', async (_description, window) => {
-    findMany.mockResolvedValue([buildRecord([window])]);
+    findUnique.mockResolvedValue(buildRecord([window]));
 
-    await expect(new CleanerRepository().findAll()).rejects.toThrow('invalid time window');
+    await expect(new CleanerRepository().findById('38193f1e-e79a-4d0b-9f0e-40876dcd3a5d')).rejects.toThrow(
+      'invalid time window',
+    );
+  });
+
+  describe('with one malformed cleaner among valid ones', () => {
+    const validId = '11111111-1111-4111-8111-111111111111';
+    const malformedId = '22222222-2222-4222-8222-222222222222';
+    const validRecord = buildRecord([{ dayOfWeek: 2, startHour: 8, endHour: 18 }], validId);
+    const malformedRecord = buildRecord([{ dayOfWeek: 2, startHour: -1, endHour: 25 }], malformedId);
+
+    beforeEach(() => {
+      findMany.mockResolvedValue([malformedRecord, validRecord]);
+    });
+
+    it('findAll returns the valid cleaners and logs the skipped one', async () => {
+      const cleaners = await new CleanerRepository().findAll();
+
+      expect(cleaners.map((cleaner) => cleaner.id)).toEqual([validId]);
+      expect(logger.error).toHaveBeenCalledWith(
+        'Skipping cleaner with invalid stored data',
+        expect.objectContaining({ cleanerId: malformedId }),
+      );
+    });
+
+    it('findAvailable still returns the valid available cleaners', async () => {
+      const slot = new TimeSlot(new Date('2030-01-01T09:00:00Z'), new Date('2030-01-01T11:00:00Z'));
+
+      const cleaners = await new CleanerRepository().findAvailable(slot);
+
+      expect(cleaners.map((cleaner) => cleaner.id)).toEqual([validId]);
+      expect(logger.error).toHaveBeenCalledTimes(1);
+    });
   });
 });
 
