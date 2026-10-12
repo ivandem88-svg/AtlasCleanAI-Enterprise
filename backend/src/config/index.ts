@@ -74,7 +74,7 @@ const getDatabaseUrl = (): string => {
   const password = getEnv('DB_PASSWORD');
   const database = process.env.DB_NAME ?? 'atlasclean';
   const port = getOptionalNumber('DB_PORT', 5432);
-  const url = new URL(`postgresql://${process.env.DB_HOST}:${port}/${database}`);
+  const url = new URL(`postgresql://${process.env.DB_HOST}:${port}/${encodeURIComponent(database)}`);
   url.username = username;
   url.password = password;
 
