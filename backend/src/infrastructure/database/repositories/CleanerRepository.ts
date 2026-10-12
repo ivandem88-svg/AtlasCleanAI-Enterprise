@@ -19,7 +19,15 @@ const parseAvailability = (value: Prisma.JsonValue): CleanerAvailability[] => {
       !('endHour' in entry) ||
       typeof entry.dayOfWeek !== 'number' ||
       typeof entry.startHour !== 'number' ||
-      typeof entry.endHour !== 'number'
+      typeof entry.endHour !== 'number' ||
+      !Number.isInteger(entry.dayOfWeek) ||
+      !Number.isInteger(entry.startHour) ||
+      !Number.isInteger(entry.endHour) ||
+      entry.dayOfWeek < 0 ||
+      entry.dayOfWeek > 6 ||
+      entry.startHour < 0 ||
+      entry.endHour > 24 ||
+      entry.startHour >= entry.endHour
     ) {
       throw new Error('Cleaner availability contains an invalid time window');
     }
