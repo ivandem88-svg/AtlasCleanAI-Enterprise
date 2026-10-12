@@ -56,12 +56,16 @@ Example policy areas:
 - CloudFormation stack management
 - ECS, ECR, EC2, IAM pass-role, RDS, ElastiCache, Route53, and Logs permissions
 - SSM or Secrets Manager access where deployment-time lookups are required
+- `sts:AssumeRole` on the CDK bootstrap roles (see Deployment Using CDK)
 
 ## Deployment Using CDK
 
 The CDK stack builds the backend image from `infrastructure/docker/Dockerfile.backend` during deployment and publishes the content-addressed image through the CDK bootstrap asset repository. No mutable `latest` application tag or pre-existing application ECR repository is required.
 
-`cdk bootstrap` creates account-level CDK roles and the asset repository; it does not create or configure the GitHub OIDC deployment role. That role must be allowed to call `sts:AssumeRole` on the CDK bootstrap roles (for example `arn:aws:iam::<account-id>:role/cdk-*`), which are the roles that publish and consume the image asset during deployment.
+`cdk bootstrap` creates account-level CDK roles and the asset repository; it does not create or configure the GitHub OIDC deployment role. Both sides of the hand-off must be in place:
+
+- the OIDC deployment role's permissions policy must allow `sts:AssumeRole` on the CDK bootstrap roles (for example `arn:aws:iam::<account-id>:role/cdk-*`), which publish and consume the image asset during deployment
+- the bootstrap roles' trust policies must trust the account that holds the deployment role, which a standard bootstrap does by default; pass `--trust <account-id>` to `cdk bootstrap` when the deployment role lives in a different account
 
 ### One-time setup
 
