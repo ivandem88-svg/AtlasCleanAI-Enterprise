@@ -104,6 +104,26 @@ The backend expects the following core settings:
 
 For local development, Docker Compose supplies working defaults. In shared or cloud environments, move secrets to environment-specific secret stores.
 
+## Atlas AI Chat Integration
+
+Atlas AI is the ChatGPT-powered assistant for cleaning operations. It supports full responses and Server-Sent Events via `/api/chat` and `/api/chat/stream`.
+
+Install the Node dependencies, copy `.env.example` to `.env`, and set `OPENAI_API_KEY`:
+
+```bash
+npm install
+cp .env.example .env
+npm start
+```
+
+The browser chat is available at `http://localhost:3000`. To protect chat endpoints, set `ATLAS_API_KEY` and supply it using the `x-api-key` header; the browser UI provides a memory-only API-key field. Requests accept at most 20 messages, 4,000 characters per message, and 16,000 characters in total.
+
+| Variable | Required | Default | Description |
+| --- | --- | --- | --- |
+| `OPENAI_API_KEY` | Yes | — | OpenAI API key |
+| `OPENAI_MODEL` | No | `gpt-4o` | OpenAI model |
+| `ATLAS_API_KEY` | No | — | Enables API-key authentication |
+
 ## CI/CD Strategy
 
 The repository includes three GitHub Actions workflows:
@@ -197,3 +217,30 @@ This repository follows a production-minded baseline:
 ## License
 
 This repository should use the organization-approved proprietary or commercial license for AtlasCleanAI Enterprise deployment assets.
+AI-powered cleaning services ecosystem.
+
+## Platforms
+
+- Customer App
+- Cleaner App
+- Management App
+- Web Portal
+
+## Core Systems
+
+- Booking Engine
+- Workforce Management
+- Payments
+- Messaging
+- Training Platform
+- Atlas AI Intelligence Layer
+
+## Architecture
+
+Flutter frontend applications
+Cloud backend infrastructure
+AI-powered operational intelligence
+
+## Development
+
+This repository contains the complete AtlasCleanAI Enterprise platform.
