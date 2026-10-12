@@ -442,14 +442,14 @@ resource "aws_secretsmanager_secret" "app" {
 }
 
 resource "aws_secretsmanager_secret_version" "app" {
-  for_each = {
+  for_each = aws_secretsmanager_secret.app
+
+  secret_id = each.value.id
+  secret_string = lookup({
     "db-password"        = var.db_password
     "jwt-secret"         = var.jwt_secret
     "jwt-refresh-secret" = var.jwt_refresh_secret
-  }
-
-  secret_id     = aws_secretsmanager_secret.app[each.key].id
-  secret_string = each.value
+  }, each.key)
 }
 
 resource "aws_iam_role_policy" "ecs_execution_secrets" {

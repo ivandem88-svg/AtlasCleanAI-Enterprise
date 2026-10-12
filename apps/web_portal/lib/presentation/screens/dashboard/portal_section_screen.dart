@@ -30,6 +30,8 @@ class PortalSectionScreen extends StatelessWidget {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: <Widget>[
+                const Text('Demo data: sample values, not live operations.'),
+                const SizedBox(height: 8),
                 Text(section.summary, style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 12),
                 for (final PortalRow row in section.rows)
