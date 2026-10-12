@@ -51,7 +51,7 @@ const List<PortalSection> portalSections = <PortalSection>[
     slug: 'invoices',
     title: 'Invoices',
     icon: Icons.receipt_long_outlined,
-    summary: 'EUR 4,820 outstanding this month',
+    summary: 'EUR 4,640 outstanding this month',
     rows: <PortalRow>[
       PortalRow(title: 'INV-1042 - Harbor Tower', subtitle: 'Due in 5 days', trailing: 'EUR 1,950'),
       PortalRow(title: 'INV-1041 - Maple St', subtitle: 'Paid yesterday', trailing: 'EUR 180'),
