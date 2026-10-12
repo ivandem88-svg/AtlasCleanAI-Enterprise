@@ -40,7 +40,8 @@ Create or confirm:
 - ACM certificates for the deployment domain
 - a Route53 hosted zone for the public domain
 - an IAM role trusted by GitHub's OIDC provider
-- GitHub environment variables and secrets for region, account, and certificates
+- GitHub environment variables for region, account, and certificates
+- `AWS_ROLE_TO_ASSUME` in the production GitHub Environment (as a variable or secret) and in the staging environment secrets
 
 ## OIDC Role Guidance
 
