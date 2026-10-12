@@ -10,6 +10,7 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
+import * as ecrAssets from 'aws-cdk-lib/aws-ecr-assets';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
@@ -164,16 +165,21 @@ export class AtlasCleanStack extends Stack {
       memoryLimitMiB: isProduction ? 2048 : 1024,
       executionRole: taskExecutionRole,
       taskRole,
+      runtimePlatform: {
+        cpuArchitecture: ecs.CpuArchitecture.X86_64,
+        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+      },
     });
 
     taskDefinition.addContainer('BackendContainer', {
       image: ecs.ContainerImage.fromAsset('../../../', {
         file: 'infrastructure/docker/Dockerfile.backend',
+        platform: ecrAssets.Platform.LINUX_AMD64,
       }),
       logging: ecs.LogDrivers.awsLogs({ logGroup: backendLogGroup, streamPrefix: 'backend' }),
       portMappings: [{ containerPort: 3000 }],
       healthCheck: {
-        command: ['CMD-SHELL', 'wget -qO- http://localhost:3000/ready || exit 1'],
+        command: ['CMD-SHELL', 'wget -qO- http://localhost:3000/health || exit 1'],
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
         retries: 3,

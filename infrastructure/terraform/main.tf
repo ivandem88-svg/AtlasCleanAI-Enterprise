@@ -434,6 +434,40 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_default" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
+resource "aws_secretsmanager_secret" "app" {
+  for_each = toset(["db-password", "jwt-secret", "jwt-refresh-secret"])
+
+  name_prefix = "${local.name_prefix}-${each.key}-"
+  tags        = local.tags
+}
+
+resource "aws_secretsmanager_secret_version" "app" {
+  for_each = {
+    "db-password"        = var.db_password
+    "jwt-secret"         = var.jwt_secret
+    "jwt-refresh-secret" = var.jwt_refresh_secret
+  }
+
+  secret_id     = aws_secretsmanager_secret.app[each.key].id
+  secret_string = each.value
+}
+
+resource "aws_iam_role_policy" "ecs_execution_secrets" {
+  name = "${local.name_prefix}-read-secrets"
+  role = aws_iam_role.ecs_execution.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["secretsmanager:GetSecretValue"]
+        Resource = [for s in aws_secretsmanager_secret.app : s.arn]
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role" "ecs_task" {
   name = "${local.name_prefix}-ecs-task"
 
@@ -481,14 +515,16 @@ resource "aws_ecs_task_definition" "backend" {
         { name = "DB_PORT", value = "5432" },
         { name = "DB_NAME", value = var.db_name },
         { name = "DB_USER", value = var.db_username },
-        { name = "DB_PASSWORD", value = var.db_password },
         { name = "DB_SSLMODE", value = "require" },
-        { name = "REDIS_URL", value = "rediss://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379" },
-        { name = "JWT_SECRET", value = var.jwt_secret },
-        { name = "JWT_REFRESH_SECRET", value = var.jwt_refresh_secret }
+        { name = "REDIS_URL", value = "rediss://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379" }
+      ]
+      secrets = [
+        { name = "DB_PASSWORD", valueFrom = aws_secretsmanager_secret.app["db-password"].arn },
+        { name = "JWT_SECRET", valueFrom = aws_secretsmanager_secret.app["jwt-secret"].arn },
+        { name = "JWT_REFRESH_SECRET", valueFrom = aws_secretsmanager_secret.app["jwt-refresh-secret"].arn }
       ]
       healthCheck = {
-        command     = ["CMD-SHELL", "wget -qO- http://localhost:${var.backend_port}/ready || exit 1"]
+        command     = ["CMD-SHELL", "wget -qO- http://localhost:${var.backend_port}/health || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3
