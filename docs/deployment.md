@@ -59,7 +59,9 @@ Example policy areas:
 
 ## Deployment Using CDK
 
-The CDK stack builds the backend image from the repository Dockerfile during deployment and publishes the content-addressed image through the CDK bootstrap asset repository. The deployment role must be bootstrapped with permissions to publish and consume CDK assets. No mutable `latest` application tag or pre-existing application ECR repository is required.
+The CDK stack builds the backend image from `infrastructure/docker/Dockerfile.backend` during deployment and publishes the content-addressed image through the CDK bootstrap asset repository. No mutable `latest` application tag or pre-existing application ECR repository is required.
+
+`cdk bootstrap` creates account-level CDK roles and the asset repository; it does not create or configure the GitHub OIDC deployment role. That role must be allowed to call `sts:AssumeRole` on the CDK bootstrap roles (for example `arn:aws:iam::<account-id>:role/cdk-*`), which are the roles that publish and consume the image asset during deployment.
 
 ### One-time setup
 
