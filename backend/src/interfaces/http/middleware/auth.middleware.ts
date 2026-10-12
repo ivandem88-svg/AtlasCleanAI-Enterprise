@@ -21,7 +21,7 @@ export const createAuthMiddleware = (jwtService: JwtService) => {
         tokenVersion: payload.tokenVersion,
       };
       next();
-    } catch (error) {
+    } catch {
       next(new UnauthorizedError('Invalid or expired token'));
     }
   };

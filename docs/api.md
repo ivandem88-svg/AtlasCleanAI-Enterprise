@@ -171,6 +171,7 @@ Recommended behavior:
 - verify database connectivity
 - verify Redis connectivity
 - verify any critical dependent services required for request serving
+- return HTTP `200` only when dependencies are reachable; otherwise return HTTP `503`
 
 ## Rate limiting and proxy behavior
 

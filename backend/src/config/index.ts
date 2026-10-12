@@ -61,13 +61,38 @@ const getOptionalNumber = (key: string, fallback: number): number => {
   return parsed;
 };
 
+const getDatabaseUrl = (): string => {
+  if (process.env.DATABASE_URL) {
+    return process.env.DATABASE_URL;
+  }
+
+  if (!process.env.DB_HOST) {
+    return 'postgresql://localhost:5432/atlascleanai?schema=public';
+  }
+
+  const username = getEnv('DB_USER');
+  const password = getEnv('DB_PASSWORD');
+  const database = process.env.DB_NAME ?? 'atlasclean';
+  const port = getOptionalNumber('DB_PORT', 5432);
+  const url = new URL(`postgresql://${process.env.DB_HOST}:${port}/${database}`);
+  url.username = username;
+  url.password = password;
+
+  if (process.env.DB_SSLMODE) {
+    url.searchParams.set('sslmode', process.env.DB_SSLMODE);
+  }
+
+  url.searchParams.set('schema', 'public');
+  return url.toString();
+};
+
 export const config: AppConfig = {
   env: process.env.NODE_ENV ?? 'development',
   port: getOptionalNumber('PORT', 4000),
   apiPrefix: process.env.API_PREFIX ?? '/api/v1',
   clientUrl: process.env.CLIENT_URL ?? 'http://localhost:3000',
   logLevel: process.env.LOG_LEVEL ?? 'info',
-  databaseUrl: process.env.DATABASE_URL ?? 'postgresql://localhost:5432/atlascleanai?schema=public',
+  databaseUrl: getDatabaseUrl(),
   redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
   jwt: {
     secret: getEnv('JWT_SECRET'),

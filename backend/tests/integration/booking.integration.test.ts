@@ -48,6 +48,22 @@ class EmailServiceStub {
 }
 
 describe('Booking routes', () => {
+  it('reports readiness when required dependencies are available', async () => {
+    const app = createApp({ readinessCheck: async () => undefined });
+    const response = await request(app).get('/ready');
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.status).toBe('ready');
+  });
+
+  it('returns service unavailable when a required dependency is unavailable', async () => {
+    const app = createApp({ readinessCheck: async () => { throw new Error('dependency unavailable'); } });
+    const response = await request(app).get('/ready');
+
+    expect(response.status).toBe(503);
+    expect(response.body.error.code).toBe('NOT_READY');
+  });
+
   it('creates a booking through HTTP', async () => {
     const jwtService = new JwtService();
     const passwordHash = await hashValue('StrongPass123');

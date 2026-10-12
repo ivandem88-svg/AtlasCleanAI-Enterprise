@@ -2,7 +2,6 @@ import * as cdk from 'aws-cdk-lib';
 import { Duration, RemovalPolicy, Stack, StackProps } from 'aws-cdk-lib';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
-import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as ecsPatterns from 'aws-cdk-lib/aws-ecs-patterns';
 import * as elasticache from 'aws-cdk-lib/aws-elasticache';
 import * as iam from 'aws-cdk-lib/aws-iam';
@@ -52,14 +51,6 @@ export class AtlasCleanStack extends Stack {
       vpc,
       containerInsightsV2: ecs.ContainerInsights.ENABLED,
       enableFargateCapacityProviders: true,
-    });
-
-    const backendRepository = new ecr.Repository(this, 'BackendRepository', {
-      repositoryName: `atlasclean-backend-${props.stage}`,
-      imageScanOnPush: true,
-      encryption: ecr.RepositoryEncryption.AES_256,
-      lifecycleRules: [{ maxImageCount: 30 }],
-      removalPolicy: isProduction ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
 
     const jwtSecret = new secretsmanager.Secret(this, 'JwtSecret', {
@@ -176,11 +167,13 @@ export class AtlasCleanStack extends Stack {
     });
 
     taskDefinition.addContainer('BackendContainer', {
-      image: ecs.ContainerImage.fromEcrRepository(backendRepository, 'latest'),
+      image: ecs.ContainerImage.fromAsset('../../../', {
+        file: 'infrastructure/docker/Dockerfile.backend',
+      }),
       logging: ecs.LogDrivers.awsLogs({ logGroup: backendLogGroup, streamPrefix: 'backend' }),
       portMappings: [{ containerPort: 3000 }],
       healthCheck: {
-        command: ['CMD-SHELL', 'wget -qO- http://localhost:3000/health || exit 1'],
+        command: ['CMD-SHELL', 'wget -qO- http://localhost:3000/ready || exit 1'],
         interval: Duration.seconds(30),
         timeout: Duration.seconds(5),
         retries: 3,
@@ -192,7 +185,8 @@ export class AtlasCleanStack extends Stack {
         DB_HOST: database.instanceEndpoint.hostname,
         DB_PORT: database.instanceEndpoint.port.toString(),
         DB_NAME: 'atlasclean',
-        REDIS_URL: `redis://${cache.attrPrimaryEndPointAddress}:6379`,
+        DB_SSLMODE: 'require',
+        REDIS_URL: `rediss://${cache.attrPrimaryEndPointAddress}:6379`,
       },
       secrets: {
         DB_USER: ecs.Secret.fromSecretsManager(dbCredentials, 'username'),
@@ -219,14 +213,10 @@ export class AtlasCleanStack extends Stack {
       securityGroups: [serviceSecurityGroup],
       taskSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
       healthCheckGracePeriod: Duration.seconds(90),
-      runtimePlatform: {
-        cpuArchitecture: ecs.CpuArchitecture.ARM64,
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-      },
     });
 
     fargateService.targetGroup.configureHealthCheck({
-      path: '/health',
+      path: '/ready',
       healthyHttpCodes: '200',
       interval: Duration.seconds(30),
       timeout: Duration.seconds(5),
@@ -256,7 +246,6 @@ export class AtlasCleanStack extends Stack {
 
     new cdk.CfnOutput(this, 'VpcId', { value: vpc.vpcId });
     new cdk.CfnOutput(this, 'ClusterName', { value: cluster.clusterName });
-    new cdk.CfnOutput(this, 'BackendRepositoryUri', { value: backendRepository.repositoryUri });
     new cdk.CfnOutput(this, 'DatabaseEndpoint', { value: database.instanceEndpoint.hostname });
     new cdk.CfnOutput(this, 'RedisEndpoint', { value: cache.attrPrimaryEndPointAddress });
     new cdk.CfnOutput(this, 'LoadBalancerDnsName', { value: fargateService.loadBalancer.loadBalancerDnsName });

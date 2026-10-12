@@ -67,7 +67,7 @@ Install the following on your workstation:
 
 - Docker Engine 24+
 - Docker Compose v2+
-- Node.js 20 LTS or newer
+- Node.js 22 LTS or newer
 - Flutter 3.13+
 - AWS CLI v2 for cloud deployments
 - Terraform 1.6+ if using the Terraform workflow
@@ -124,7 +124,6 @@ Configure these repository or environment values before enabling deployments:
 | `CDK_DEFAULT_REGION` | Variable | AWS region for CDK deployments |
 | `ATLAS_DOMAIN_NAME` | Variable | Public DNS name for the application |
 | `ATLAS_CERTIFICATE_ARN` | Secret/Variable | ACM certificate ARN for HTTPS |
-| `ECR_BACKEND_REPOSITORY` | Variable | Optional existing ECR repository name |
 
 ## Infrastructure Options
 
@@ -190,39 +189,11 @@ This repository follows a production-minded baseline:
 
 ## Next Steps
 
-1. Add the backend service source code in `backend/` if it does not yet exist.
-2. Add Flutter applications in `apps/customer_app` and `apps/cleaner_app` if they are not yet present.
-3. Wire the shared Dart packages into the consuming mobile apps.
-4. Provision AWS accounts, OIDC roles, and environment protections before enabling production deployment.
-5. Establish migration, seeding, and backup policies for PostgreSQL.
+1. Add and maintain versioned Prisma migrations and a controlled production migration step.
+2. Define a secure onboarding and data-seeding process for cleaner and service records.
+3. Integrate the shared Dart packages into each application where appropriate.
+4. Provision AWS accounts, OIDC roles, and environment protections before enabling deployments.
 
 ## License
 
 This repository should use the organization-approved proprietary or commercial license for AtlasCleanAI Enterprise deployment assets.
-AI-powered cleaning services ecosystem.
-
-## Platforms
-
-- Customer App
-- Cleaner App
-- Management App
-- Web Portal
-
-## Core Systems
-
-- Booking Engine
-- Workforce Management
-- Payments
-- Messaging
-- Training Platform
-- Atlas AI Intelligence Layer
-
-## Architecture
-
-Flutter frontend applications  
-Cloud backend infrastructure  
-AI-powered operational intelligence
-
-## Development
-
-This repository contains the complete AtlasCleanAI Enterprise platform.

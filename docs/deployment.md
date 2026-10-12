@@ -59,6 +59,8 @@ Example policy areas:
 
 ## Deployment Using CDK
 
+The CDK stack builds the backend image from the repository Dockerfile during deployment and publishes the content-addressed image through the CDK bootstrap asset repository. The deployment role must be bootstrapped with permissions to publish and consume CDK assets. No mutable `latest` application tag or pre-existing application ECR repository is required.
+
 ### One-time setup
 
 ```bash
@@ -132,7 +134,7 @@ terraform apply \
 
 ### Application-level rollback
 
-- redeploy a previous backend container image tag
+- redeploy a previous known-good revision so CDK restores its content-addressed backend image
 - avoid destructive schema changes without backwards-compatible rollout plans
 
 ## Data Protection Guidance

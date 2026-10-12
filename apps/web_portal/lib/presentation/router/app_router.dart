@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 import 'package:web_portal/domain/usecases/login_usecase.dart';
 import 'package:web_portal/presentation/screens/auth/login_screen.dart';
 import 'package:web_portal/presentation/screens/dashboard/portal_dashboard_screen.dart';
+import 'package:web_portal/presentation/screens/dashboard/portal_section_screen.dart';
 import 'package:web_portal/presentation/screens/landing/landing_screen.dart';
 
 class AppRouter {
@@ -13,7 +14,16 @@ class AppRouter {
     routes: <GoRoute>[
       GoRoute(path: '/', builder: (_, __) => const LandingScreen()),
       GoRoute(path: '/login', builder: (_, __) => LoginScreen(loginUsecase: loginUsecase)),
-      GoRoute(path: '/dashboard', builder: (_, __) => const PortalDashboardScreen()),
+      GoRoute(
+        path: '/dashboard',
+        builder: (_, __) => const PortalDashboardScreen(),
+        routes: <GoRoute>[
+          GoRoute(
+            path: ':section',
+            builder: (_, GoRouterState state) => PortalSectionScreen(slug: state.pathParameters['section'] ?? ''),
+          ),
+        ],
+      ),
     ],
   );
 }

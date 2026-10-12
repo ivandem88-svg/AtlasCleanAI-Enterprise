@@ -164,3 +164,9 @@ cdk.out/
 
 # Prisma
 prisma/migrations/
+
+# Tool artifacts
+.pytest_cache/
+.flutter
+.flutter_tool_state
+node_modules/

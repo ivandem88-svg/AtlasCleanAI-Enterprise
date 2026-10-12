@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:web_portal/presentation/screens/dashboard/portal_sections.dart';
 
 class PortalDashboardScreen extends StatelessWidget {
   const PortalDashboardScreen({super.key});
@@ -12,13 +14,13 @@ class PortalDashboardScreen extends StatelessWidget {
         crossAxisCount: 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        children: const <Widget>[
-          _PortalTile(title: 'Bookings', icon: Icons.calendar_month),
-          _PortalTile(title: 'Cleaners', icon: Icons.groups_2_outlined),
-          _PortalTile(title: 'Invoices', icon: Icons.receipt_long_outlined),
-          _PortalTile(title: 'Automation', icon: Icons.auto_graph_outlined),
-          _PortalTile(title: 'SLA', icon: Icons.verified_outlined),
-          _PortalTile(title: 'Support', icon: Icons.support_agent_outlined),
+        children: <Widget>[
+          for (final PortalSection section in portalSections)
+            _PortalTile(
+              title: section.title,
+              icon: section.icon,
+              onTap: () => context.go('/dashboard/${section.slug}'),
+            ),
         ],
       ),
     );
@@ -26,21 +28,26 @@ class PortalDashboardScreen extends StatelessWidget {
 }
 
 class _PortalTile extends StatelessWidget {
-  const _PortalTile({required this.title, required this.icon});
+  const _PortalTile({required this.title, required this.icon, required this.onTap});
 
   final String title;
   final IconData icon;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(icon, size: 36),
-          const SizedBox(height: 10),
-          Text(title),
-        ],
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(icon, size: 36),
+            const SizedBox(height: 10),
+            Text(title),
+          ],
+        ),
       ),
     );
   }

@@ -5,14 +5,14 @@ import { logger } from '../../shared/utils/logger';
 
 export class EmailService {
   private readonly transporter = nodemailer.createTransport(
-    (config.smtp.host
+    config.smtp.host
       ? {
           host: config.smtp.host,
           port: config.smtp.port,
           secure: config.smtp.port === 465,
           auth: config.smtp.user && config.smtp.pass ? { user: config.smtp.user, pass: config.smtp.pass } : undefined,
         }
-      : { jsonTransport: true }) as unknown as nodemailer.TransportOptions,
+      : { jsonTransport: true },
   );
 
   async sendWelcomeEmail(email: string, name: string): Promise<void> {

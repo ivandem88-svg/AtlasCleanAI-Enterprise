@@ -366,7 +366,7 @@ resource "aws_lb_target_group" "backend" {
     healthy_threshold   = 2
     interval            = 30
     matcher             = "200"
-    path                = "/health"
+    path                = "/ready"
     protocol            = "HTTP"
     timeout             = 5
     unhealthy_threshold = 3
@@ -477,13 +477,18 @@ resource "aws_ecs_task_definition" "backend" {
       environment = [
         { name = "NODE_ENV", value = var.environment },
         { name = "PORT", value = tostring(var.backend_port) },
-        { name = "DATABASE_URL", value = "postgres://${var.db_username}:${var.db_password}@${aws_db_instance.main.address}:5432/${var.db_name}" },
-        { name = "REDIS_URL", value = "redis://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379" },
+        { name = "DB_HOST", value = aws_db_instance.main.address },
+        { name = "DB_PORT", value = "5432" },
+        { name = "DB_NAME", value = var.db_name },
+        { name = "DB_USER", value = var.db_username },
+        { name = "DB_PASSWORD", value = var.db_password },
+        { name = "DB_SSLMODE", value = "require" },
+        { name = "REDIS_URL", value = "rediss://${aws_elasticache_replication_group.main.primary_endpoint_address}:6379" },
         { name = "JWT_SECRET", value = var.jwt_secret },
         { name = "JWT_REFRESH_SECRET", value = var.jwt_refresh_secret }
       ]
       healthCheck = {
-        command     = ["CMD-SHELL", "wget -qO- http://localhost:${var.backend_port}/health || exit 1"]
+        command     = ["CMD-SHELL", "wget -qO- http://localhost:${var.backend_port}/ready || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3

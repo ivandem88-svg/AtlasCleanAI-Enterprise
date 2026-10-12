@@ -25,6 +25,9 @@ export const connectRedis = async (): Promise<void> => {
   if (redisClient.status === 'wait') {
     await redisClient.connect();
   }
+  if (redisClient.status !== 'ready') {
+    throw new Error(`Redis connection is not ready (status: ${redisClient.status})`);
+  }
   logger.info('Redis connection established');
 };
 

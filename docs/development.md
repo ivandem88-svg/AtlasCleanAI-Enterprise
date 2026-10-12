@@ -9,7 +9,7 @@ This repository is structured to let teams work on infrastructure, backend servi
 Install:
 
 - Docker Engine and Docker Compose
-- Node.js 20+
+- Node.js 22+
 - Flutter 3.13+
 - Dart SDK matching the Flutter toolchain
 - AWS CLI v2 for infrastructure work
@@ -111,7 +111,8 @@ terraform validate
 
 ### Backend runtime
 
-- `DATABASE_URL`
+- `DATABASE_URL`, or the `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD` settings
+- `DB_SSLMODE` when PostgreSQL requires TLS (for example, `require` on AWS RDS)
 - `REDIS_URL`
 - `JWT_SECRET`
 - `JWT_REFRESH_SECRET`

@@ -3,7 +3,12 @@ import { NextFunction, Request, Response } from 'express';
 import { AppError } from '../../../shared/errors/AppError';
 import { logger } from '../../../shared/utils/logger';
 
-export const errorHandler = (error: Error, request: Request, response: Response, _next: NextFunction): void => {
+export const errorHandler = (error: Error, request: Request, response: Response, next: NextFunction): void => {
+  if (response.headersSent) {
+    next(error);
+    return;
+  }
+
   if (error instanceof AppError) {
     response.status(error.statusCode).json({
       success: false,

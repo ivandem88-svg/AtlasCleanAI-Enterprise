@@ -5,10 +5,9 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 
 import { config } from './config';
-import { Booking } from './domain/entities/Booking';
-import { Cleaner } from './domain/entities/Cleaner';
+import { prisma } from './config/database';
+import { redisClient } from './config/redis';
 import { ICleanerRepository } from './domain/repositories/ICleanerRepository';
-import { TimeSlot } from './domain/value-objects/TimeSlot';
 import { CleanerRecommendationUseCase } from './application/use-cases/ai/CleanerRecommendationUseCase';
 import { DemandPredictionUseCase } from './application/use-cases/ai/DemandPredictionUseCase';
 import { DynamicPricingUseCase } from './application/use-cases/ai/DynamicPricingUseCase';
@@ -24,6 +23,7 @@ import { ProcessPaymentUseCase } from './application/use-cases/payment/ProcessPa
 import { RefundPaymentUseCase } from './application/use-cases/payment/RefundPaymentUseCase';
 import { UserRepository } from './infrastructure/database/repositories/UserRepository';
 import { BookingRepository } from './infrastructure/database/repositories/BookingRepository';
+import { CleanerRepository } from './infrastructure/database/repositories/CleanerRepository';
 import { PaymentRepository } from './infrastructure/database/repositories/PaymentRepository';
 import { AtlasAIService } from './infrastructure/services/AtlasAIService';
 import { EmailService } from './infrastructure/services/EmailService';
@@ -45,67 +45,7 @@ import { createBookingRoutes } from './interfaces/http/routes/booking.routes';
 import { createCleanerRoutes } from './interfaces/http/routes/cleaner.routes';
 import { createNotificationRoutes } from './interfaces/http/routes/notification.routes';
 import { createPaymentRoutes } from './interfaces/http/routes/payment.routes';
-
-class StaticCleanerRepository implements ICleanerRepository {
-  private readonly cleaners: Cleaner[] = [
-    new Cleaner({
-      id: '00000000-0000-0000-0000-000000000101',
-      firstName: 'Maya',
-      lastName: 'Santos',
-      email: 'maya.santos@atlasclean.ai',
-      rating: 4.9,
-      completedJobs: 243,
-      skills: ['standard', 'deep', 'moveout'],
-      serviceAreas: ['94107', '94110', '94158'],
-      availability: [
-        { dayOfWeek: 1, startHour: 8, endHour: 18 },
-        { dayOfWeek: 2, startHour: 8, endHour: 18 },
-        { dayOfWeek: 3, startHour: 8, endHour: 18 },
-        { dayOfWeek: 4, startHour: 8, endHour: 18 },
-        { dayOfWeek: 5, startHour: 8, endHour: 18 },
-      ],
-      vehicleAvailable: true,
-      backgroundChecked: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }),
-    new Cleaner({
-      id: '00000000-0000-0000-0000-000000000102',
-      firstName: 'Aiden',
-      lastName: 'Brooks',
-      email: 'aiden.brooks@atlasclean.ai',
-      rating: 4.7,
-      completedJobs: 188,
-      skills: ['standard', 'commercial'],
-      serviceAreas: ['94107', '94016'],
-      availability: [
-        { dayOfWeek: 1, startHour: 6, endHour: 16 },
-        { dayOfWeek: 2, startHour: 6, endHour: 16 },
-        { dayOfWeek: 3, startHour: 6, endHour: 16 },
-        { dayOfWeek: 4, startHour: 6, endHour: 16 },
-        { dayOfWeek: 5, startHour: 6, endHour: 16 },
-      ],
-      vehicleAvailable: true,
-      backgroundChecked: true,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }),
-  ];
-
-  async findById(id: string) {
-    return this.cleaners.find((cleaner) => cleaner.id === id) ?? null;
-  }
-
-  async findAll() {
-    return this.cleaners;
-  }
-
-  async findAvailable(slot: TimeSlot, postalCode?: string) {
-    return this.cleaners.filter(
-      (cleaner) => cleaner.isAvailable(slot) && (!postalCode || cleaner.serviceAreas.includes(postalCode)),
-    );
-  }
-}
+import { logger } from './shared/utils/logger';
 
 export interface AppDependencies {
   userRepository: UserRepository;
@@ -118,19 +58,25 @@ export interface AppDependencies {
   firebaseService: FirebaseService;
   stripeService: StripeService;
   atlasAIService: AtlasAIService;
+  readinessCheck: () => Promise<void>;
 }
 
 const buildDependencies = (overrides: Partial<AppDependencies> = {}): AppDependencies => ({
   userRepository: overrides.userRepository ?? new UserRepository(),
   bookingRepository: overrides.bookingRepository ?? new BookingRepository(),
   paymentRepository: overrides.paymentRepository ?? new PaymentRepository(),
-  cleanerRepository: overrides.cleanerRepository ?? new StaticCleanerRepository(),
+  cleanerRepository: overrides.cleanerRepository ?? new CleanerRepository(),
   jwtService: overrides.jwtService ?? new JwtService(),
   emailService: overrides.emailService ?? new EmailService(),
   smsService: overrides.smsService ?? new SmsService(),
   firebaseService: overrides.firebaseService ?? new FirebaseService(),
   stripeService: overrides.stripeService ?? new StripeService(),
   atlasAIService: overrides.atlasAIService ?? new AtlasAIService(),
+  readinessCheck:
+    overrides.readinessCheck ??
+    (async () => {
+      await Promise.all([prisma.$queryRaw`SELECT 1`, redisClient.ping()]);
+    }),
 });
 
 export const createApp = (overrides: Partial<AppDependencies> = {}): Express => {
@@ -204,6 +150,24 @@ export const createApp = (overrides: Partial<AppDependencies> = {}): Express => 
         timestamp: new Date().toISOString(),
       },
     });
+  });
+
+  app.get('/ready', async (_request, response) => {
+    try {
+      await dependencies.readinessCheck();
+      response.status(200).json({ success: true, data: { status: 'ready' } });
+    } catch (error) {
+      logger.error('Readiness check failed', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      response.status(503).json({
+        success: false,
+        error: {
+          code: 'NOT_READY',
+          message: 'A required dependency is unavailable',
+        },
+      });
+    }
   });
 
   app.use(`${config.apiPrefix}/auth`, createAuthRoutes(authController));
