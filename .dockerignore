@@ -9,3 +9,11 @@
 **/*.tfstate*
 **/.terraform
 cdk.out
+apps/**
+docs/**
+packages/**
+README.md
+docker-compose.yml
+infrastructure/aws/**
+infrastructure/nginx/**
+infrastructure/terraform/**
