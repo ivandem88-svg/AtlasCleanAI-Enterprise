@@ -17,6 +17,11 @@ void main() {
     for (final String title in <String>['Bookings', 'Cleaners', 'Invoices', 'Automation', 'SLA', 'Support']) {
       await tester.tap(find.text(title));
       await tester.pumpAndSettle();
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text(title)),
+        findsOneWidget,
+        reason: '$title tile should open the $title section',
+      );
       expect(find.byTooltip('Back to dashboard'), findsOneWidget, reason: title);
       await tester.tap(find.byTooltip('Back to dashboard'));
       await tester.pumpAndSettle();
