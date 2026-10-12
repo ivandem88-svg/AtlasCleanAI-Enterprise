@@ -45,7 +45,8 @@ describe('CleanerRepository availability parsing', () => {
   });
 
   it.each([
-    ['hours outside the day', { dayOfWeek: 2, startHour: -1, endHour: 25 }],
+    ['a negative start hour', { dayOfWeek: 2, startHour: -1, endHour: 18 }],
+    ['an end hour above 24', { dayOfWeek: 2, startHour: 8, endHour: 25 }],
     ['a start hour that is not before the end hour', { dayOfWeek: 2, startHour: 18, endHour: 8 }],
     ['an empty window', { dayOfWeek: 2, startHour: 8, endHour: 8 }],
     ['a weekday outside 0-6', { dayOfWeek: 7, startHour: 8, endHour: 18 }],
