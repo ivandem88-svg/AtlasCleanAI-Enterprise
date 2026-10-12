@@ -139,18 +139,6 @@ export const createApp = (overrides: Partial<AppDependencies> = {}): Express => 
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true }));
   app.use(morgan(config.env === 'production' ? 'combined' : 'dev'));
-  app.use(apiRateLimiter);
-
-  app.get('/health', (_request, response) => {
-    response.status(200).json({
-      success: true,
-      data: {
-        status: 'ok',
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString(),
-      },
-    });
-  });
 
   app.get('/ready', async (_request, response) => {
     try {
@@ -168,6 +156,19 @@ export const createApp = (overrides: Partial<AppDependencies> = {}): Express => 
         },
       });
     }
+  });
+
+  app.use(apiRateLimiter);
+
+  app.get('/health', (_request, response) => {
+    response.status(200).json({
+      success: true,
+      data: {
+        status: 'ok',
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString(),
+      },
+    });
   });
 
   app.use(`${config.apiPrefix}/auth`, createAuthRoutes(authController));

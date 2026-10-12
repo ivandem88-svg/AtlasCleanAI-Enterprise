@@ -56,6 +56,16 @@ describe('Booking routes', () => {
     expect(response.body.data.status).toBe('ready');
   });
 
+  it('does not apply the API rate limit to readiness checks', async () => {
+    const app = createApp({ readinessCheck: async () => undefined });
+
+    const readyResponse = await request(app).get('/ready');
+    const healthResponse = await request(app).get('/health');
+
+    expect(readyResponse.headers['ratelimit-limit']).toBeUndefined();
+    expect(healthResponse.headers['ratelimit-limit']).toBeDefined();
+  });
+
   it('returns service unavailable when a required dependency is unavailable', async () => {
     const app = createApp({ readinessCheck: async () => { throw new Error('dependency unavailable'); } });
     const response = await request(app).get('/ready');
